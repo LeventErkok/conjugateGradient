@@ -1,0 +1,4 @@
+The ConjugateGradient library can be installed simply by issuing cabal install
+like this:
+
+     cabal install ConjugateGradient
