@@ -142,14 +142,25 @@ showSolution :: RealFloat a
              -> SV a    -- ^ The @b@ matrix, @nx1@
              -> SV a    -- ^ The @x@ matrix, @nx1@, as returned by 'solveCG', for instance.
              -> String
-showSolution padLen prec n ma vb vx = intercalate "\n" $ zipWith3 row a b x
-  where range = [0..n-1]
+showSolution padLen prec n ma vb vx = intercalate "\n" $ header ++ res
+  where res   = zipWith3 row a x b
+        range = [0..n-1]
         a = [[ma `mLookup` (i, j) | j <- range] | i <- range]
-        b = [vb `vLookup` i | i <- range]
         x = [vx `vLookup` i | i <- range]
-        row as bv xv = unwords (map sh as) ++ " | " ++ sh bv ++ " = " ++ sh xv
+        b = [vb `vLookup` i | i <- range]
+        row as xv bv = unwords (map sh as) ++ " | " ++ sh xv ++ " = " ++ sh bv
         sh d = pad $ showFFloat (Just prec) d ""
-        pad s = reverse $ take (length s `max` padLen) $ reverse s ++ repeat ' '
+        pad s  = reverse $ take (length s `max` padLen) $ reverse s ++ repeat ' '
+        center l s = let extra         = l - length s
+                         (left, right) = (extra `div` 2, extra - left)
+                     in  replicate left ' ' ++ s ++ replicate right ' '
+        header = case res of
+                   []    -> ["Empty matrix"]
+                   (r:_) -> let l = length (takeWhile (/= '|') r)
+                                h =  center (l-1) "A"  ++ " | "
+                                  ++ center padLen "x" ++ " = " ++ center padLen "b"
+                                s = replicate l '-' ++ "+" ++ replicate (length r - l) '-'
+                            in [h, s]
 
 {- $typeInfo
 We represent sparse matrices and vectors using 'IM.IntMap's. In a sparse vector, we only populate those elements that are non-@0@.
