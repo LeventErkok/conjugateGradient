@@ -6,4 +6,4 @@ http://en.wikipedia.org/wiki/Conjugate_gradient_method
 Build Status
 ============
 We use Travis-CI's automated build infrastructure, making a build for each commit. Current build status:
-[![Build Status](https://secure.travis-ci.org/LeventErkok/ConjugateGradient.png?branch=master)](http://travis-ci.org/LeventErkok/ConjugateGradient)
+[![Build Status](https://secure.travis-ci.org/LeventErkok/conjugateGradient.png?branch=master)](http://travis-ci.org/LeventErkok/conjugateGradient)
