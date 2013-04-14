@@ -1,6 +1,6 @@
 # (c) Copyright Levent Erkok. All rights reserved.
 #
-# The ConjugateGradient library is distributed with the BSD3 license. See the LICENSE file
+# The conjugateGradient library is distributed with the BSD3 license. See the LICENSE file
 # in the distribution for details.
 SHELL     := /usr/bin/env bash
 TSTSRCS   = $(shell find . -name '*.hs' -or -name '*.lhs')

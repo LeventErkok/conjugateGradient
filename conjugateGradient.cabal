@@ -2,7 +2,7 @@ Name:          ConjugateGradient
 Version:       1.0
 Category:      Math
 Synopsis:      Sparse matrix linear-equation solver
-Description:   Solves sparse linear systems of equations, using the conjugate gradient algorithm.
+Description:   Spares matrix linear-equation solver, using the conjugate gradient algorithm.
 Copyright:     Levent Erkok, 2013
 License:       BSD3
 License-file:  LICENSE
