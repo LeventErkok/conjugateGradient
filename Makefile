@@ -4,7 +4,7 @@
 # in the distribution for details.
 SHELL     := /usr/bin/env bash
 TSTSRCS   = $(shell find . -name '*.hs' -or -name '*.lhs')
-DEPSRCS   = $(shell find . -name '*.hs' -or -name '*.lhs' -or -name '*.cabal' | grep -v Paths_ConjugateGradient.hs)
+DEPSRCS   = $(shell find . -name '*.hs' -or -name '*.lhs' -or -name '*.cabal' | grep -v Paths_conjugateGradient.hs)
 CABAL     = cabal
 TIME      = /usr/bin/time
 
@@ -17,7 +17,7 @@ endef
 all: install
 
 install: $(DEPSRCS) Makefile
-	@-ghc-pkg unregister ConjugateGradient
+	@-ghc-pkg unregister conjugateGradient
 	$(call mkTags)
 	@$(CABAL) configure --disable-library-profiling
 	@(set -o pipefail; $(CABAL) build --ghc-options=-Werror 2>&1)
@@ -31,7 +31,7 @@ sdist: install
 	@(set -o pipefail; $(CABAL) sdist)
 
 veryclean: clean
-	@-ghc-pkg unregister ConjugateGradient
+	@-ghc-pkg unregister conjugateGradient
 
 clean:
 	@rm -rf dist
