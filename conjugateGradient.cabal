@@ -1,4 +1,4 @@
-Name:          ConjugateGradient
+Name:          conjugateGradient
 Version:       1.0
 Category:      Math
 Synopsis:      Sparse matrix linear-equation solver
