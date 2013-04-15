@@ -1,9 +1,13 @@
 Hackage: <http://hackage.haskell.org/package/ConjugateGradient>
 GitHub:  <http://github.com/LeventErkok/ConjugateGradient>
 
-Latest Hackage released version: 1.0
+Latest Hackage released version: 1.1
+
+======================================================================
+Version 1.1, 2013-04-15
+  - Add an example demonstating the usage over a simple example.
 
 ======================================================================
 Version 1.0, 2013-04-14
 
-  - First public release
+  - First public release.
