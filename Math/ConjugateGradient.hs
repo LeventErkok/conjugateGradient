@@ -20,6 +20,23 @@
 --
 --  The conjugate gradient method can handle very large sparse matrices, where direct
 --  methods (such as LU decomposition) are way too expensive to be useful in practice.
+--
+-- Here's an example usage, for the simple system:
+--
+-- @
+--       4x +  y = 1
+--        x + 3y = 2
+-- @
+--
+-- >>> let a = IM.fromList [(0, IM.fromList [(0,4::Double), (1,1)]), (1, IM.fromList [(0, 1), (1, 3)])]
+-- >>> let b = IM.fromList [(0,1), (1,2::Double)]
+-- >>> let g = mkStdGen 12345
+-- >>> let (_, x) = solveCG g 2 a b
+-- >>> putStrLn $ showSolution 6 4 2 a b x
+--       A       |   x    =   b   
+-- --------------+----------------
+-- 4.0000 1.0000 | 0.0909 = 1.0000
+-- 1.0000 3.0000 | 0.6364 = 2.0000
 ---------------------------------------------------------------------------------
 
 module Math.ConjugateGradient(
@@ -36,9 +53,9 @@ module Math.ConjugateGradient(
 
 import Data.List                   (intercalate)
 import Data.Maybe                  (fromMaybe)
-import qualified Data.IntMap as IM (IntMap, lookup, map, unionWith, intersectionWith, fold, fromList)  -- Can we get rid of fromList
-import System.Random               (Random, RandomGen, randomRs)
-import Numeric                     (showFFloat)
+import qualified Data.IntMap as IM (IntMap, lookup, map, unionWith, intersectionWith, fold, fromList)
+import System.Random
+import Numeric
 
 -- | A sparse vector containing elements of type 'a'. (For our purposes, the elements will be either 'Float's or 'Double's.)
 type SV a = IM.IntMap a
@@ -82,7 +99,7 @@ dotSV v1 v2 = IM.fold (+) 0 $ IM.intersectionWith (*) v1 v2
 mulSMV :: RealFloat a => SM a -> SV a -> SV a
 mulSMV m v = IM.map (`dotSV` v) m
 
--- | Norm of a sparse vector. (Square-root of it's dot-product with itself.)
+-- | Norm of a sparse vector. (Square-root of its dot-product with itself.)
 normSV :: RealFloat a => SV a -> a
 normSV = sqrt . IM.fold (\e s -> e*e + s) 0
 
@@ -159,7 +176,7 @@ showSolution padLen prec n ma vb vx = intercalate "\n" $ header ++ res
                    (r:_) -> let l = length (takeWhile (/= '|') r)
                                 h =  center (l-1) "A"  ++ " | "
                                   ++ center padLen "x" ++ " = " ++ center padLen "b"
-                                s = replicate l '-' ++ "+" ++ replicate (length r - l) '-'
+                                s = replicate l '-' ++ "+" ++ replicate (length r - l - 1) '-'
                             in [h, s]
 
 {- $typeInfo
