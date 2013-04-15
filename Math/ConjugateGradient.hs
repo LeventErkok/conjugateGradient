@@ -31,11 +31,11 @@
 -- @
 --
 -- >>> import Data.IntMap
--- >>> let a = fromList [(0, fromList [(0, 4), (1, 1)]), (1, fromList [(0, 1), (1, 3)])] :: SM Double
+-- >>> let a = (2, fromList [(0, fromList [(0, 4), (1, 1)]), (1, fromList [(0, 1), (1, 3)])]) :: SM Double
 -- >>> let b = fromList [(0, 1), (1, 2)] :: SV Double
 -- >>> let g = mkStdGen 12345
--- >>> let (_, x) = solveCG g 2 a b
--- >>> putStrLn $ showSolution 4 2 a b x
+-- >>> let (_, x) = solveCG g a b
+-- >>> putStrLn $ showSolution 4 a b x
 --       A       |   x    =   b   
 -- --------------+----------------
 -- 4.0000 1.0000 | 0.0909 = 1.0000
@@ -63,8 +63,17 @@ import Numeric
 -- | A sparse vector containing elements of type 'a'. (For our purposes, the elements will be either 'Float's or 'Double's.)
 type SV a = IM.IntMap a
 
--- | A sparse matrix is an int-map containing sparse row-vectors. Again, only put in rows that have a non-@0@ element in them for efficiency.
-type SM a = IM.IntMap (SV a)
+-- | A sparse matrix is an int-map containing sparse row-vectors:
+--
+--     * The first element, @n@, is the number of rows in the matrix, including those with all @0@ elements.
+--
+--     * The matrix is implicitly assumed to be @nxn@, indexed by keys @(0, 0)@ to @(n-1, n-1)@.
+--
+--     * When constructing a sparse-matrix, only put in rows that have a non-@0@ element in them for efficiency.
+--       (Nothing will break if you put in rows that have all @0@'s in them, it's just not as efficient.) 
+--
+--     * Make sure the keys of the int-map is a subset of @[0 .. n-1]@, both for the row-indices and the indices of the vectors representing the sparse-rows.
+type SM a = (Int, IM.IntMap (SV a))
 
 ---------------------------------------------------------------------------------
 -- Sparse vector/matrix operations
@@ -76,7 +85,7 @@ vLookup m k = fromMaybe 0 (k `IM.lookup` m)
 
 -- | Look-up a value in a sparse-matrix.
 mLookup :: Num a => SM a -> (Int, Int) -> a
-mLookup m (i, j) = maybe 0 (`vLookup` j) (i `IM.lookup` m)
+mLookup (_, m) (i, j) = maybe 0 (`vLookup` j) (i `IM.lookup` m)
 
 -- | Multiply a sparse-vector by a scalar.
 sMulSV :: RealFloat a => a -> SV a -> SV a
@@ -84,7 +93,7 @@ sMulSV s = IM.map (s *)
 
 -- | Multiply a sparse-matrix by a scalar.
 sMulSM :: RealFloat a => a -> SM a -> SM a
-sMulSM s = IM.map (s `sMulSV`)
+sMulSM s (n, m) = (n, IM.map (s `sMulSV`) m)
 
 -- | Add two sparse vectors.
 addSV :: RealFloat a => SV a -> SV a -> SV a
@@ -100,7 +109,7 @@ dotSV v1 v2 = IM.fold (+) 0 $ IM.intersectionWith (*) v1 v2
 
 -- | Multiply a sparse matrix (nxn) with a sparse vector (nx1), obtaining a sparse vector (nx1).
 mulSMV :: RealFloat a => SM a -> SV a -> SV a
-mulSMV m v = IM.map (`dotSV` v) m
+mulSMV (_, m) v = IM.map (`dotSV` v) m
 
 -- | Norm of a sparse vector. (Square-root of its dot-product with itself.)
 normSV :: RealFloat a => SV a -> a
@@ -125,11 +134,10 @@ normSV = sqrt . IM.fold (\e s -> e*e + s) 0
 -- for a discussion on the convergence properties of this algorithm.
 solveCG :: (RandomGen g, RealFloat a, Random a)
         => g          -- ^ The seed for the random-number generator.
-        -> Int        -- ^ Number of variables.
         -> SM a       -- ^ The @A@ sparse matrix (@nxn@).
         -> SV a       -- ^ The @b@ sparse vector (@nx1@).
         -> (a, SV a)  -- ^ The final error factor, and the @x@ sparse matrix (@nx1@), such that @Ax = b@.
-solveCG g n a b = cg a b x0
+solveCG g a@(n, _) b = cg a b x0
   where rs = take n (randomRs (0, 1) g)
         x0 = IM.fromList [p | p@(_, j) <- zip [0..] rs, j /= 0]
 
@@ -156,12 +164,11 @@ cg a b x0 = cgIter (1000000 :: Int) (norm r0) r0 r0 x0
 -- method when the system is small enough to fit nicely on the screen.
 showSolution :: RealFloat a
              => Int   -- ^ Precision: Use this many digits after the decimal point.
-             -> Int   -- ^ Number of variables, @n@
              -> SM a  -- ^ The @A@ matrix, @nxn@
              -> SV a  -- ^ The @b@ matrix, @nx1@
              -> SV a  -- ^ The @x@ matrix, @nx1@, as returned by 'solveCG', for instance.
              -> String
-showSolution prec n ma vb vx = intercalate "\n" $ header ++ res
+showSolution prec ma@(n, _) vb vx = intercalate "\n" $ header ++ res
   where res   = zipWith3 row a x b
         range = [0..n-1]
         sf d = showFFloat (Just prec) d ""
@@ -188,5 +195,5 @@ In a sparse matrix, we only populate those rows that contain a non-@0@ element. 
 sparse matrices and vectors, where the space usage is proportional to number of non-@0@ elements. Strictly speaking, putting non-@0@ elements
 would not break the algorithms we use, but clearly they would be less efficient.
 
-Indexings starts at @0@, and is assumed to be non-negative, corresponding to the row numbers.
+Indexing starts at @0@, and is assumed to be non-negative, corresponding to the row numbers.
 -}
