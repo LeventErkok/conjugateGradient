@@ -20,6 +20,8 @@
 --
 --  The conjugate gradient method can handle very large sparse matrices, where direct
 --  methods (such as LU decomposition) are way too expensive to be useful in practice.
+--  Such large sparse matrices arise naturally in many engineering problems, such as
+--  in ASIC placement algorithms and when solving partial differential equations.
 --
 -- Here's an example usage, for the simple system:
 --
@@ -28,11 +30,12 @@
 --        x + 3y = 2
 -- @
 --
--- >>> let a = IM.fromList [(0, IM.fromList [(0,4::Double), (1,1)]), (1, IM.fromList [(0, 1), (1, 3)])]
--- >>> let b = IM.fromList [(0,1), (1,2::Double)]
+-- >>> import Data.IntMap
+-- >>> let a = fromList [(0, fromList [(0, 4), (1, 1)]), (1, fromList [(0, 1), (1, 3)])] :: SM Double
+-- >>> let b = fromList [(0, 1), (1, 2)] :: SV Double
 -- >>> let g = mkStdGen 12345
 -- >>> let (_, x) = solveCG g 2 a b
--- >>> putStrLn $ showSolution 6 4 2 a b x
+-- >>> putStrLn $ showSolution 4 2 a b x
 --       A       |   x    =   b   
 -- --------------+----------------
 -- 4.0000 1.0000 | 0.0909 = 1.0000
@@ -152,22 +155,22 @@ cg a b x0 = cgIter (1000000 :: Int) (norm r0) r0 r0 x0
 -- | Display a solution in a human-readable form. Needless to say, only use this
 -- method when the system is small enough to fit nicely on the screen.
 showSolution :: RealFloat a
-             => Int     -- ^ Cell-width. Each value will occupy this many characters at least.
-             -> Int     -- ^ Precision: Use this many digits after the decimal point.
-             -> Int     -- ^ Number of variables, @n@
-             -> SM a    -- ^ The @A@ matrix, @nxn@
-             -> SV a    -- ^ The @b@ matrix, @nx1@
-             -> SV a    -- ^ The @x@ matrix, @nx1@, as returned by 'solveCG', for instance.
+             => Int   -- ^ Precision: Use this many digits after the decimal point.
+             -> Int   -- ^ Number of variables, @n@
+             -> SM a  -- ^ The @A@ matrix, @nxn@
+             -> SV a  -- ^ The @b@ matrix, @nx1@
+             -> SV a  -- ^ The @x@ matrix, @nx1@, as returned by 'solveCG', for instance.
              -> String
-showSolution padLen prec n ma vb vx = intercalate "\n" $ header ++ res
+showSolution prec n ma vb vx = intercalate "\n" $ header ++ res
   where res   = zipWith3 row a x b
         range = [0..n-1]
-        a = [[ma `mLookup` (i, j) | j <- range] | i <- range]
-        x = [vx `vLookup` i | i <- range]
-        b = [vb `vLookup` i | i <- range]
-        row as xv bv = unwords (map sh as) ++ " | " ++ sh xv ++ " = " ++ sh bv
-        sh d = pad $ showFFloat (Just prec) d ""
-        pad s  = reverse $ take (length s `max` padLen) $ reverse s ++ repeat ' '
+        sf d = showFFloat (Just prec) d ""
+        a = [[sf (ma `mLookup` (i, j)) | j <- range] | i <- range]
+        x = [sf (vx `vLookup` i) | i <- range]
+        b = [sf (vb `vLookup` i) | i <- range]
+        cellWidth = maximum (0 : map length (concat a ++ x ++ b))
+        row as xv bv = unwords (map pad as) ++ " | " ++ pad xv ++ " = " ++ pad bv
+        pad s  = reverse $ take (length s `max` cellWidth) $ reverse s ++ repeat ' '
         center l s = let extra         = l - length s
                          (left, right) = (extra `div` 2, extra - left)
                      in  replicate left ' ' ++ s ++ replicate right ' '
@@ -175,7 +178,7 @@ showSolution padLen prec n ma vb vx = intercalate "\n" $ header ++ res
                    []    -> ["Empty matrix"]
                    (r:_) -> let l = length (takeWhile (/= '|') r)
                                 h =  center (l-1) "A"  ++ " | "
-                                  ++ center padLen "x" ++ " = " ++ center padLen "b"
+                                  ++ center cellWidth "x" ++ " = " ++ center cellWidth "b"
                                 s = replicate l '-' ++ "+" ++ replicate (length r - l - 1) '-'
                             in [h, s]
 

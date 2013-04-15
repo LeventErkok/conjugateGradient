@@ -1,5 +1,5 @@
 Name:          conjugateGradient
-Version:       1.1
+Version:       1.2
 Category:      Math
 Synopsis:      Sparse matrix linear-equation solver
 Description:   Sparse matrix linear-equation solver, using the conjugate gradient algorithm. Note that the
@@ -13,6 +13,8 @@ Description:   Sparse matrix linear-equation solver, using the conjugate gradien
                .
                The conjugate gradient method can handle very large sparse matrices, where direct
                methods (such as LU decomposition) are way too expensive to be useful in practice.
+               Such large sparse matrices arise naturally in many engineering problems, such as
+               in ASIC placement algorithms and when solving partial differential equations.
 Copyright:     Levent Erkok, 2013
 License:       BSD3
 License-file:  LICENSE
