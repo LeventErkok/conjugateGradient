@@ -40,7 +40,7 @@ docs:
 	@(set -o pipefail; $(CABAL) haddock --haddock-option=--no-warnings --hyperlink-source 2>&1)
 
 release: clean install sdist hlint test docs
-	@echo "*** ConjugateGradient is ready for release!"
+	@echo "*** conjugateGradient is ready for release!"
 
 hlint: install
 	@echo "Running HLint.."

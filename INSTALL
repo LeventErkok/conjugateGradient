@@ -1,3 +1,3 @@
 The ConjugateGradient library can be installed using haskell from hackage:
 
-     cabal install ConjugateGradient
+     cabal install conjugateGradient

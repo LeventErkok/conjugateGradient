@@ -20,8 +20,8 @@ License:       BSD3
 License-file:  LICENSE
 Stability:     Experimental
 Author:        Levent Erkok
-Homepage:      http://github.com/LeventErkok/ConjugateGradient
-Bug-reports:   http://github.com/LeventErkok/ConjugateGradient/issues
+Homepage:      http://github.com/LeventErkok/conjugateGradient
+Bug-reports:   http://github.com/LeventErkok/conjugateGradient/issues
 Maintainer:    Levent Erkok (erkokl@gmail.com)
 Build-Type:    Simple
 Cabal-Version: >= 1.14
