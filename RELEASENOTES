@@ -1,7 +1,14 @@
 Hackage: <http://hackage.haskell.org/package/conjugateGradient>
 GitHub:  <http://github.com/LeventErkok/conjugateGradient>
 
-Latest Hackage released version: 1.3
+Latest Hackage released version: 1.4
+
+Version 1.4, 2013-04-16
+======================================================================
+  - Fix github source location
+  - Clarify that the entire matrix should be given: Even though
+    we assume it's symmetric, the algorithm needs all non-0 elements
+    to be present; not just the upper (or the lower)-triangle.
 
 ======================================================================
 Version 1.3, 2013-04-16
@@ -11,9 +18,6 @@ Version 1.3, 2013-04-16
     iterations typically indicates the input matrix is not
     symmetric and positive-definite.
   - Tighten import lists and the example
-  - Clarify that the entire matrix should be given: Even though
-    we assume it's symmetric, the algorithm needs all non-0 elements
-    to be present; not just the upper (or the lower)-triangle.
 
 ======================================================================
 Version 1.2, 2013-04-15

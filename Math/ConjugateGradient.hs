@@ -61,7 +61,9 @@ import qualified Data.IntMap as IM (IntMap, lookup, map, unionWith, intersection
 import System.Random               (Random, RandomGen, randomRs)
 import Numeric                     (showFFloat)
 
--- | A sparse vector containing elements of type 'a'. (For our purposes, the elements will be either 'Float's or 'Double's.)
+-- | A sparse vector containing elements of type 'a'. For our purposes, the elements will be either 'Float's or 'Double's. Only
+-- the indices that contain non-@0@ elements should be given for efficiency purposes. (Nothing will break if you put in
+-- elements that are @0@'s, it's just not as efficient.)
 type SV a = IM.IntMap a
 
 -- | A sparse matrix is an int-map containing sparse row-vectors:
@@ -71,8 +73,8 @@ type SV a = IM.IntMap a
 --     * The matrix is implicitly assumed to be @nxn@, indexed by keys @(0, 0)@ to @(n-1, n-1)@.
 --
 --     * When constructing a sparse-matrix, only put in rows that have a non-@0@ element in them for efficiency.
---       (Nothing will break if you put in rows that have all @0@'s in them, it's just not as efficient.) Note
---       that you have to give all the non-0 elements: Even though the matrix must be symmetric for the algorithm
+--
+--     * Note that you have to give all the non-0 elements: Even though the matrix must be symmetric for the algorithm
 --       to work, the matrix should contain all the non-@0@ elements, not just the upper (or the lower)-triangle.
 --
 --     * Make sure the keys of the int-map is a subset of @[0 .. n-1]@, both for the row-indices and the indices of the vectors representing the sparse-rows.
@@ -199,7 +201,8 @@ showSolution prec ma@(n, _) vb vx = intercalate "\n" $ header ++ res
 We represent sparse matrices and vectors using 'IM.IntMap's. In a sparse vector, we only populate those elements that are non-@0@.
 In a sparse matrix, we only populate those rows that contain a non-@0@ element. This leads to an efficient representation for
 sparse matrices and vectors, where the space usage is proportional to number of non-@0@ elements. Strictly speaking, putting non-@0@ elements
-would not break the algorithms we use, but clearly they would be less efficient.
+would not break the algorithms we use, but clearly they would be less efficient. Note that all non-@0@ rows should be present in the sparse
+matrix: Even if we only use symmetric matrices, the algorithm still requires all rows to be present, not just the upper (or the lower)-triangle.
 
 Indexing starts at @0@, and is assumed to be non-negative, corresponding to the row numbers.
 -}
