@@ -35,7 +35,7 @@
 -- >>> let a = (2, fromList [(0, fromList [(0, 4), (1, 1)]), (1, fromList [(0, 1), (1, 3)])]) :: SM Double
 -- >>> let b = fromList [(0, 1), (1, 2)] :: SV Double
 -- >>> let g = mkStdGen 12345
--- >>> let (_, x) = solveCG g a b
+-- >>> let x = solveCG g a b
 -- >>> putStrLn $ showSolution 4 a b x
 --       A       |   x    =   b   
 -- --------------+----------------
@@ -135,25 +135,28 @@ normSV = sqrt . IM.fold (\e s -> e*e + s) 0
 -- the current solution from the last one, as we go through the iteration. See
 -- <http://en.wikipedia.org/wiki/Conjugate_gradient_method#Convergence_properties_of_the_conjugate_gradient_method>
 -- for a discussion on the convergence properties of this algorithm.
+--
+-- The solver can throw an error if it does not converge by @10^6@ iterations. This is typically an indication
+-- that the input matrix is not symmetric positive definite.
 solveCG :: (RandomGen g, RealFloat a, Random a)
         => g          -- ^ The seed for the random-number generator.
         -> SM a       -- ^ The @A@ sparse matrix (@nxn@).
         -> SV a       -- ^ The @b@ sparse vector (@nx1@).
-        -> (a, SV a)  -- ^ The final error factor, and the @x@ sparse matrix (@nx1@), such that @Ax = b@.
+        -> SV a       -- ^ The @x@ sparse matrix (@nx1@), such that @Ax = b@.
 solveCG g a@(n, _) b = cg a b x0
   where rs = take n (randomRs (0, 1) g)
         x0 = IM.fromList [p | p@(_, j) <- zip [0..] rs, j /= 0]
 
 -- | The Conjugate-gradient algorithm. Our implementation closely follows the
 -- one given here: <http://en.wikipedia.org/wiki/Conjugate_gradient_method#Example_code_in_Matlab>
-cg :: RealFloat a => SM a -> SV a -> SV a -> (a, SV a)
+cg :: RealFloat a => SM a -> SV a -> SV a -> SV a
 cg a b x0 = cgIter (1000000 :: Int) (norm r0) r0 r0 x0
  where r0 = b `subSV` (a `mulSMV` x0)
-       cgIter 0 eps _ _ x = (eps, x)
+       cgIter 0 _   _ _ _ = error "Conjugate Gradient: No convergence after 10^6 iterations. Make sure the input matrix is symmetric positive-definite!"
        cgIter i eps p r x
         -- Stop if the square of the error is less than 1e-20, i.e.,
         -- if the error itself is less than 1e-10.
-        | eps' < 1e-20 = (eps', x')
+        | eps' < 1e-20 = x'
         | True         = cgIter (i-1) eps' p' r' x'
         where ap    = a `mulSMV` p
               alpha = eps / ap `dotSV` p
