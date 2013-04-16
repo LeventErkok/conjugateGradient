@@ -1,10 +1,10 @@
 Hackage: <http://hackage.haskell.org/package/ConjugateGradient>
 GitHub:  <http://github.com/LeventErkok/ConjugateGradient>
 
-Latest Hackage released version: 1.2
+Latest Hackage released version: 1.3
 
 ======================================================================
-Version 1.3, Not yet released
+Version 1.3, 2013-04-16
   - Instead of returning an error-bound, throw an error if
     no convergence is reached after 10^6 iterations. This is
     more practical, as returning a result after that many
