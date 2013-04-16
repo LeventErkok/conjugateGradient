@@ -31,6 +31,7 @@
 -- @
 --
 -- >>> import Data.IntMap
+-- >>> import System.Random
 -- >>> let a = (2, fromList [(0, fromList [(0, 4), (1, 1)]), (1, fromList [(0, 1), (1, 3)])]) :: SM Double
 -- >>> let b = fromList [(0, 1), (1, 2)] :: SV Double
 -- >>> let g = mkStdGen 12345
@@ -57,8 +58,8 @@ module Math.ConjugateGradient(
 import Data.List                   (intercalate)
 import Data.Maybe                  (fromMaybe)
 import qualified Data.IntMap as IM (IntMap, lookup, map, unionWith, intersectionWith, fold, fromList)
-import System.Random
-import Numeric
+import System.Random               (Random, RandomGen, randomRs)
+import Numeric                     (showFFloat)
 
 -- | A sparse vector containing elements of type 'a'. (For our purposes, the elements will be either 'Float's or 'Double's.)
 type SV a = IM.IntMap a
@@ -70,7 +71,9 @@ type SV a = IM.IntMap a
 --     * The matrix is implicitly assumed to be @nxn@, indexed by keys @(0, 0)@ to @(n-1, n-1)@.
 --
 --     * When constructing a sparse-matrix, only put in rows that have a non-@0@ element in them for efficiency.
---       (Nothing will break if you put in rows that have all @0@'s in them, it's just not as efficient.) 
+--       (Nothing will break if you put in rows that have all @0@'s in them, it's just not as efficient.) Note
+--       that you have to give all the non-0 elements: Even though the matrix must be symmetric for the algorithm
+--       to work, the matrix should contain all the non-@0@ elements, not just the upper (or the lower)-triangle.
 --
 --     * Make sure the keys of the int-map is a subset of @[0 .. n-1]@, both for the row-indices and the indices of the vectors representing the sparse-rows.
 type SM a = (Int, IM.IntMap (SV a))

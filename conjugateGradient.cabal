@@ -1,5 +1,5 @@
 Name:          conjugateGradient
-Version:       1.2
+Version:       1.3
 Category:      Math
 Synopsis:      Sparse matrix linear-equation solver
 Description:   Sparse matrix linear-equation solver, using the conjugate gradient algorithm. Note that the

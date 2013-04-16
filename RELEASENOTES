@@ -4,6 +4,13 @@ GitHub:  <http://github.com/LeventErkok/ConjugateGradient>
 Latest Hackage released version: 1.2
 
 ======================================================================
+Version 1.3, Not yet released
+  - Tighten import lists and the example
+  - Clarify that the entire matrix should be given: Even though
+    we assume it's symmetric, the algorithm needs all non-0 elements
+    to be present; not just the upper (or the lower)-triangle.
+
+======================================================================
 Version 1.2, 2013-04-15
   - Simplify types, clean-up example.
 
