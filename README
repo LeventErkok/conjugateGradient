@@ -6,3 +6,5 @@ Conjugate Gradient Solver
 Sparse matrix linear equation solver, using the Conjugate Gradient algorithm: http://en.wikipedia.org/wiki/Conjugate_gradient_method.
 
 The method is applicable to matrices that are symmetric and positive definite.
+
+On hackage: http://hackage.haskell.org/package/conjugateGradient
