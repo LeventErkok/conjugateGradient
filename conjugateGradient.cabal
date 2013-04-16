@@ -29,7 +29,7 @@ Extra-Source-Files: INSTALL, README, COPYRIGHT, RELEASENOTES
 
 source-repository head
     type:       git
-    location:   git://github.com/LeventErkok/ConjugateGradient.git
+    location:   git://github.com/LeventErkok/conjugateGradient.git
 
 Library
   default-language: Haskell2010
