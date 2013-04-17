@@ -1,30 +1,27 @@
 Hackage: <http://hackage.haskell.org/package/conjugateGradient>
 GitHub:  <http://github.com/LeventErkok/conjugateGradient>
 
-Latest Hackage released version: 1.4
+Latest Hackage released version: 2.0
 
-Version 1.4, 2013-04-16
+Version 2.0, 2013-04-17
+======================================================================
+  - First "official" release
+  - Add newtype wrappers for safety
+  - Export all sparse matrix operations
+
+Versions 1.4-1.1, Early April 2013
 ======================================================================
   - Fix github source location
   - Clarify that the entire matrix should be given: Even though
     we assume it's symmetric, the algorithm needs all non-0 elements
     to be present; not just the upper (or the lower)-triangle.
-
-======================================================================
-Version 1.3, 2013-04-16
   - Instead of returning an error-bound, throw an error if
     no convergence is reached after 10^6 iterations. This is
     more practical, as returning a result after that many
     iterations typically indicates the input matrix is not
     symmetric and positive-definite.
   - Tighten import lists and the example
-
-======================================================================
-Version 1.2, 2013-04-15
   - Simplify types, clean-up example.
-
-======================================================================
-Version 1.1, 2013-04-15
   - Add an example demonstating the usage over a simple example.
 
 ======================================================================

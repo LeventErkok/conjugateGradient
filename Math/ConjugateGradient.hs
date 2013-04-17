@@ -10,13 +10,8 @@
 -- Comments, bug reports, and patches are always welcome.)
 --
 -- Sparse matrix linear-equation solver, using the conjugate gradient algorithm. Note that the technique only
--- applies to matrices that are:
---
---              * Symmetric
---
---              * Positive-definite
---
---  See <http://en.wikipedia.org/wiki/Conjugate_gradient_method> for details.
+-- applies to matrices that are symmetric and positive definite. See <http://en.wikipedia.org/wiki/Conjugate_gradient_method>
+-- for details.
 --
 --  The conjugate gradient method can handle very large sparse matrices, where direct
 --  methods (such as LU decomposition) are way too expensive to be useful in practice.
@@ -32,8 +27,9 @@
 --
 -- >>> import Data.IntMap
 -- >>> import System.Random
--- >>> let a = (2, fromList [(0, fromList [(0, 4), (1, 1)]), (1, fromList [(0, 1), (1, 3)])]) :: SM Double
--- >>> let b = fromList [(0, 1), (1, 2)] :: SV Double
+-- >>> import Math.ConjugateGradient
+-- >>> let a = SM (2, fromList [(0, SV (fromList [(0, 4), (1, 1)])), (1, SV (fromList [(0, 1), (1, 3)]))]) :: SM Double
+-- >>> let b = SV (fromList [(0, 1), (1, 2)]) :: SV Double
 -- >>> let g = mkStdGen 12345
 -- >>> let x = solveCG g a b
 -- >>> putStrLn $ showSolution 4 a b x
@@ -45,10 +41,9 @@
 
 module Math.ConjugateGradient(
           -- * Types
-          -- $typeInfo
-            SV, SM
+            SV(..), SM(..)
           -- * Sparse operations
-          , sMulSV, sMulSM, addSV, subSV, dotSV, mulSMV, normSV
+          , svLookup, smLookup, addSV, subSV, dotSV, normSV, sMulSV, sMulSM, mulSMV
           -- * Conjugate-Gradient solver
           , solveCG
           -- * Displaying solutions
@@ -61,12 +56,11 @@ import qualified Data.IntMap as IM (IntMap, lookup, map, unionWith, intersection
 import System.Random               (Random, RandomGen, randomRs)
 import Numeric                     (showFFloat)
 
--- | A sparse vector containing elements of type 'a'. For our purposes, the elements will be either 'Float's or 'Double's. Only
--- the indices that contain non-@0@ elements should be given for efficiency purposes. (Nothing will break if you put in
--- elements that are @0@'s, it's just not as efficient.)
-type SV a = IM.IntMap a
+-- | A sparse vector containing elements of type 'a'. Only the indices that contain non-@0@ elements should be given
+-- for efficiency purposes. (Nothing will break if you put in elements that are @0@'s, it's just not as efficient.)
+newtype SV a = SV (IM.IntMap a)
 
--- | A sparse matrix is an int-map containing sparse row-vectors:
+-- | A sparse matrix is essentially an int-map containing sparse row-vectors:
 --
 --     * The first element, @n@, is the number of rows in the matrix, including those with all @0@ elements.
 --
@@ -78,47 +72,47 @@ type SV a = IM.IntMap a
 --       to work, the matrix should contain all the non-@0@ elements, not just the upper (or the lower)-triangle.
 --
 --     * Make sure the keys of the int-map is a subset of @[0 .. n-1]@, both for the row-indices and the indices of the vectors representing the sparse-rows.
-type SM a = (Int, IM.IntMap (SV a))
+newtype SM a = SM (Int, IM.IntMap (SV a))
 
 ---------------------------------------------------------------------------------
 -- Sparse vector/matrix operations
 ---------------------------------------------------------------------------------
 
 -- | Look-up a value in a sparse-vector.
-vLookup :: Num a => SV a -> Int -> a
-vLookup m k = fromMaybe 0 (k `IM.lookup` m)
+svLookup :: Num a => SV a -> Int -> a
+svLookup (SV v) k = fromMaybe 0 (k `IM.lookup` v)
 
 -- | Look-up a value in a sparse-matrix.
-mLookup :: Num a => SM a -> (Int, Int) -> a
-mLookup (_, m) (i, j) = maybe 0 (`vLookup` j) (i `IM.lookup` m)
+smLookup :: Num a => SM a -> (Int, Int) -> a
+smLookup (SM (_, m)) (i, j) = maybe 0 (`svLookup` j) (i `IM.lookup` m)
 
 -- | Multiply a sparse-vector by a scalar.
-sMulSV :: RealFloat a => a -> SV a -> SV a
-sMulSV s = IM.map (s *)
+sMulSV :: Num a => a -> SV a -> SV a
+sMulSV s (SV v) = SV (IM.map (s *) v)
 
 -- | Multiply a sparse-matrix by a scalar.
-sMulSM :: RealFloat a => a -> SM a -> SM a
-sMulSM s (n, m) = (n, IM.map (s `sMulSV`) m)
+sMulSM :: Num a => a -> SM a -> SM a
+sMulSM s (SM (n, m)) = SM (n, IM.map (s `sMulSV`) m)
 
 -- | Add two sparse vectors.
-addSV :: RealFloat a => SV a -> SV a -> SV a
-addSV = IM.unionWith (+)
+addSV :: Num a => SV a -> SV a -> SV a
+addSV (SV v1) (SV v2) = SV (IM.unionWith (+) v1 v2)
 
 -- | Subtract two sparse vectors.
-subSV :: RealFloat a => SV a -> SV a -> SV a
-subSV v1 v2 = addSV v1 (IM.map ((-1)*) v2)
+subSV :: Num a => SV a -> SV a -> SV a
+subSV v1 (SV v2) = addSV v1 (SV (IM.map ((-1)*) v2))
 
 -- | Dot product of two sparse vectors.
-dotSV :: RealFloat a => SV a -> SV a -> a
-dotSV v1 v2 = IM.fold (+) 0 $ IM.intersectionWith (*) v1 v2
+dotSV :: Num a => SV a -> SV a -> a
+dotSV (SV v1) (SV v2) = IM.fold (+) 0 $ IM.intersectionWith (*) v1 v2
 
 -- | Multiply a sparse matrix (nxn) with a sparse vector (nx1), obtaining a sparse vector (nx1).
-mulSMV :: RealFloat a => SM a -> SV a -> SV a
-mulSMV (_, m) v = IM.map (`dotSV` v) m
+mulSMV :: Num a => SM a -> SV a -> SV a
+mulSMV (SM (_, m)) v = SV (IM.map (`dotSV` v) m)
 
 -- | Norm of a sparse vector. (Square-root of its dot-product with itself.)
 normSV :: RealFloat a => SV a -> a
-normSV = sqrt . IM.fold (\e s -> e*e + s) 0
+normSV (SV v) = sqrt . IM.fold (\e s -> e*e + s) 0 $ v
 
 -- | Conjugate Gradient Solver for the system @Ax=b@. See: <http://en.wikipedia.org/wiki/Conjugate_gradient_method>.
 --
@@ -126,28 +120,30 @@ normSV = sqrt . IM.fold (\e s -> e*e + s) 0
 --
 --    * The @A@ matrix is symmetric and positive definite.
 --
+--    * All non-@0@ rows are present. (Even if the input is assumed symmetric, all rows must be present.)
+--
 --    * The indices start from @0@ and go consecutively up-to @n-1@. (Only non-@0@ value/row
 --      indices has to be present, of course.)
 --
--- For efficiency reasons, we do not check for either property. (If these assumptions are
+-- For efficiency reasons, we do not check that these properties hold of the input. (If these assumptions are
 -- violated, the algorithm will still produce a result, but not the one you expected!)
 --
 -- We perform either @10^6@ iterations of the Conjugate-Gradient algorithm, or until the error
 -- factor is less than @1e-10@. The error factor is defined as the difference of the norm of
--- the current solution from the last one, as we go through the iteration. See
+-- the current solution from the last one, as we go through the iterative solver. See
 -- <http://en.wikipedia.org/wiki/Conjugate_gradient_method#Convergence_properties_of_the_conjugate_gradient_method>
 -- for a discussion on the convergence properties of this algorithm.
 --
 -- The solver can throw an error if it does not converge by @10^6@ iterations. This is typically an indication
--- that the input matrix is not symmetric positive definite.
+-- that the input matrix is not well formed, i.e., not symmetric positive-definite.
 solveCG :: (RandomGen g, RealFloat a, Random a)
         => g          -- ^ The seed for the random-number generator.
         -> SM a       -- ^ The @A@ sparse matrix (@nxn@).
         -> SV a       -- ^ The @b@ sparse vector (@nx1@).
         -> SV a       -- ^ The @x@ sparse matrix (@nx1@), such that @Ax = b@.
-solveCG g a@(n, _) b = cg a b x0
+solveCG g a@(SM (n, _)) b = cg a b x0
   where rs = take n (randomRs (0, 1) g)
-        x0 = IM.fromList [p | p@(_, j) <- zip [0..] rs, j /= 0]
+        x0 = SV $ IM.fromList [p | p@(_, j) <- zip [0..] rs, j /= 0]
 
 -- | The Conjugate-gradient algorithm. Our implementation closely follows the
 -- one given here: <http://en.wikipedia.org/wiki/Conjugate_gradient_method#Example_code_in_Matlab>
@@ -161,12 +157,12 @@ cg a b x0 = cgIter (1000000 :: Int) (norm r0) r0 r0 x0
         | eps' < 1e-20 = x'
         | True         = cgIter (i-1) eps' p' r' x'
         where ap    = a `mulSMV` p
-              alpha = eps / ap `dotSV` p
+              alpha = eps / (ap `dotSV` p)
               x'    = x `addSV` (alpha `sMulSV` p)
               r'    = r `subSV` (alpha `sMulSV` ap)
               eps'  = norm r'
               p'    = r' `addSV` ((eps' / eps) `sMulSV` p)
-       norm = IM.fold (\e s -> e*e + s) 0  -- square of normSV, but no need for expensive square-root
+       norm (SV v) = IM.fold (\e s -> e*e + s) 0 v -- square of normSV, but no need for expensive square-root
 
 -- | Display a solution in a human-readable form. Needless to say, only use this
 -- method when the system is small enough to fit nicely on the screen.
@@ -176,13 +172,13 @@ showSolution :: RealFloat a
              -> SV a  -- ^ The @b@ matrix, @nx1@
              -> SV a  -- ^ The @x@ matrix, @nx1@, as returned by 'solveCG', for instance.
              -> String
-showSolution prec ma@(n, _) vb vx = intercalate "\n" $ header ++ res
+showSolution prec ma@(SM (n, _)) vb vx = intercalate "\n" $ header ++ res
   where res   = zipWith3 row a x b
         range = [0..n-1]
         sf d = showFFloat (Just prec) d ""
-        a = [[sf (ma `mLookup` (i, j)) | j <- range] | i <- range]
-        x = [sf (vx `vLookup` i) | i <- range]
-        b = [sf (vb `vLookup` i) | i <- range]
+        a = [[sf (ma `smLookup` (i, j)) | j <- range] | i <- range]
+        x = [sf (vx `svLookup` i) | i <- range]
+        b = [sf (vb `svLookup` i) | i <- range]
         cellWidth = maximum (0 : map length (concat a ++ x ++ b))
         row as xv bv = unwords (map pad as) ++ " | " ++ pad xv ++ " = " ++ pad bv
         pad s  = reverse $ take (length s `max` cellWidth) $ reverse s ++ repeat ' '
@@ -196,13 +192,3 @@ showSolution prec ma@(n, _) vb vx = intercalate "\n" $ header ++ res
                                   ++ center cellWidth "x" ++ " = " ++ center cellWidth "b"
                                 s = replicate l '-' ++ "+" ++ replicate (length r - l - 1) '-'
                             in [h, s]
-
-{- $typeInfo
-We represent sparse matrices and vectors using 'IM.IntMap's. In a sparse vector, we only populate those elements that are non-@0@.
-In a sparse matrix, we only populate those rows that contain a non-@0@ element. This leads to an efficient representation for
-sparse matrices and vectors, where the space usage is proportional to number of non-@0@ elements. Strictly speaking, putting non-@0@ elements
-would not break the algorithms we use, but clearly they would be less efficient. Note that all non-@0@ rows should be present in the sparse
-matrix: Even if we only use symmetric matrices, the algorithm still requires all rows to be present, not just the upper (or the lower)-triangle.
-
-Indexing starts at @0@, and is assumed to be non-negative, corresponding to the row numbers.
--}
