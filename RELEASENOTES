@@ -1,7 +1,12 @@
 Hackage: <http://hackage.haskell.org/package/conjugateGradient>
 GitHub:  <http://github.com/LeventErkok/conjugateGradient>
 
-Latest Hackage released version: 2.0
+Latest Hackage released version: 2.1
+
+Version 2.1, 2013-04-18
+======================================================================
+  - Use strict int-maps as the underlying container
+  - Rename some methods to make them more consistent
 
 Version 2.0, 2013-04-17
 ======================================================================

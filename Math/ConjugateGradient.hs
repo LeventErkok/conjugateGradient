@@ -25,7 +25,7 @@
 --        x + 3y = 2
 -- @
 --
--- >>> import Data.IntMap
+-- >>> import Data.IntMap.Strict
 -- >>> import System.Random
 -- >>> import Math.ConjugateGradient
 -- >>> let a = SM (2, fromList [(0, SV (fromList [(0, 4), (1, 1)])), (1, SV (fromList [(0, 1), (1, 3)]))]) :: SM Double
@@ -43,18 +43,19 @@ module Math.ConjugateGradient(
           -- * Types
             SV(..), SM(..)
           -- * Sparse operations
-          , svLookup, smLookup, addSV, subSV, dotSV, normSV, sMulSV, sMulSM, mulSMV
+          , lookupSV, lookupSM, addSV, subSV, dotSV, normSV, sMulSV, sMulSM, mulSMV
           -- * Conjugate-Gradient solver
           , solveCG
           -- * Displaying solutions
           , showSolution
         ) where
 
-import Data.List                   (intercalate)
-import Data.Maybe                  (fromMaybe)
-import qualified Data.IntMap as IM (IntMap, lookup, map, unionWith, intersectionWith, fold, fromList)
-import System.Random               (Random, RandomGen, randomRs)
-import Numeric                     (showFFloat)
+import Data.List                          (intercalate)
+import Data.Maybe                         (fromMaybe)
+import qualified Data.IntMap        as IM (fold)
+import qualified Data.IntMap.Strict as IM (IntMap, lookup, map, unionWith, intersectionWith, fromList)
+import System.Random                      (Random, RandomGen, randomRs)
+import Numeric                            (showFFloat)
 
 -- | A sparse vector containing elements of type 'a'. Only the indices that contain non-@0@ elements should be given
 -- for efficiency purposes. (Nothing will break if you put in elements that are @0@'s, it's just not as efficient.)
@@ -79,12 +80,12 @@ newtype SM a = SM (Int, IM.IntMap (SV a))
 ---------------------------------------------------------------------------------
 
 -- | Look-up a value in a sparse-vector.
-svLookup :: Num a => SV a -> Int -> a
-svLookup (SV v) k = fromMaybe 0 (k `IM.lookup` v)
+lookupSV :: Num a => SV a -> Int -> a
+lookupSV (SV v) k = fromMaybe 0 (k `IM.lookup` v)
 
 -- | Look-up a value in a sparse-matrix.
-smLookup :: Num a => SM a -> (Int, Int) -> a
-smLookup (SM (_, m)) (i, j) = maybe 0 (`svLookup` j) (i `IM.lookup` m)
+lookupSM :: Num a => SM a -> (Int, Int) -> a
+lookupSM (SM (_, m)) (i, j) = maybe 0 (`lookupSV` j) (i `IM.lookup` m)
 
 -- | Multiply a sparse-vector by a scalar.
 sMulSV :: Num a => a -> SV a -> SV a
@@ -176,9 +177,9 @@ showSolution prec ma@(SM (n, _)) vb vx = intercalate "\n" $ header ++ res
   where res   = zipWith3 row a x b
         range = [0..n-1]
         sf d = showFFloat (Just prec) d ""
-        a = [[sf (ma `smLookup` (i, j)) | j <- range] | i <- range]
-        x = [sf (vx `svLookup` i) | i <- range]
-        b = [sf (vb `svLookup` i) | i <- range]
+        a = [[sf (ma `lookupSM` (i, j)) | j <- range] | i <- range]
+        x = [sf (vx `lookupSV` i) | i <- range]
+        b = [sf (vb `lookupSV` i) | i <- range]
         cellWidth = maximum (0 : map length (concat a ++ x ++ b))
         row as xv bv = unwords (map pad as) ++ " | " ++ pad xv ++ " = " ++ pad bv
         pad s  = reverse $ take (length s `max` cellWidth) $ reverse s ++ repeat ' '
