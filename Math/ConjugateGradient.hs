@@ -51,9 +51,7 @@ module Math.ConjugateGradient(
         ) where
 
 import Data.List                          (intercalate)
-import Data.Maybe                         (fromMaybe)
-import qualified Data.IntMap        as IM (fold)
-import qualified Data.IntMap.Strict as IM (IntMap, lookup, map, unionWith, intersectionWith, fromList)
+import qualified Data.IntMap.Strict as IM (IntMap, lookup, map, unionWith, intersectionWith, fromList, findWithDefault, foldl')
 import System.Random                      (Random, RandomGen, randomRs)
 import Numeric                            (showFFloat)
 
@@ -80,12 +78,12 @@ newtype SM a = SM (Int, IM.IntMap (SV a))
 ---------------------------------------------------------------------------------
 
 -- | Look-up a value in a sparse-vector.
-lookupSV :: Num a => SV a -> Int -> a
-lookupSV (SV v) k = fromMaybe 0 (k `IM.lookup` v)
+lookupSV :: Num a => Int -> SV a -> a
+lookupSV k (SV v) = IM.findWithDefault 0 k v
 
 -- | Look-up a value in a sparse-matrix.
-lookupSM :: Num a => SM a -> (Int, Int) -> a
-lookupSM (SM (_, m)) (i, j) = maybe 0 (`lookupSV` j) (i `IM.lookup` m)
+lookupSM :: Num a => (Int, Int) -> SM a -> a
+lookupSM (i, j) (SM (_, m)) = maybe 0 (j `lookupSV`) (i `IM.lookup` m)
 
 -- | Multiply a sparse-vector by a scalar.
 sMulSV :: Num a => a -> SV a -> SV a
@@ -105,7 +103,7 @@ subSV v1 (SV v2) = addSV v1 (SV (IM.map ((-1)*) v2))
 
 -- | Dot product of two sparse vectors.
 dotSV :: Num a => SV a -> SV a -> a
-dotSV (SV v1) (SV v2) = IM.fold (+) 0 $ IM.intersectionWith (*) v1 v2
+dotSV (SV v1) (SV v2) = IM.foldl' (+) 0 $ IM.intersectionWith (*) v1 v2
 
 -- | Multiply a sparse matrix (nxn) with a sparse vector (nx1), obtaining a sparse vector (nx1).
 mulSMV :: Num a => SM a -> SV a -> SV a
@@ -113,7 +111,7 @@ mulSMV (SM (_, m)) v = SV (IM.map (`dotSV` v) m)
 
 -- | Norm of a sparse vector. (Square-root of its dot-product with itself.)
 normSV :: RealFloat a => SV a -> a
-normSV (SV v) = sqrt . IM.fold (\e s -> e*e + s) 0 $ v
+normSV (SV v) = sqrt . IM.foldl' (\s e -> s + e*e) 0 $ v
 
 -- | Conjugate Gradient Solver for the system @Ax=b@. See: <http://en.wikipedia.org/wiki/Conjugate_gradient_method>.
 --
@@ -163,7 +161,7 @@ cg a b x0 = cgIter (1000000 :: Int) (norm r0) r0 r0 x0
               r'    = r `subSV` (alpha `sMulSV` ap)
               eps'  = norm r'
               p'    = r' `addSV` ((eps' / eps) `sMulSV` p)
-       norm (SV v) = IM.fold (\e s -> e*e + s) 0 v -- square of normSV, but no need for expensive square-root
+       norm (SV v) = IM.foldl' (\s e -> s + e*e) 0 v -- square of normSV, but no need for expensive square-root
 
 -- | Display a solution in a human-readable form. Needless to say, only use this
 -- method when the system is small enough to fit nicely on the screen.
@@ -177,9 +175,9 @@ showSolution prec ma@(SM (n, _)) vb vx = intercalate "\n" $ header ++ res
   where res   = zipWith3 row a x b
         range = [0..n-1]
         sf d = showFFloat (Just prec) d ""
-        a = [[sf (ma `lookupSM` (i, j)) | j <- range] | i <- range]
-        x = [sf (vx `lookupSV` i) | i <- range]
-        b = [sf (vb `lookupSV` i) | i <- range]
+        a = [[sf ((i, j) `lookupSM` ma) | j <- range] | i <- range]
+        x = [sf (i `lookupSV` vx) | i <- range]
+        b = [sf (i `lookupSV` vb) | i <- range]
         cellWidth = maximum (0 : map length (concat a ++ x ++ b))
         row as xv bv = unwords (map pad as) ++ " | " ++ pad xv ++ " = " ++ pad bv
         pad s  = reverse $ take (length s `max` cellWidth) $ reverse s ++ repeat ' '
@@ -193,3 +191,28 @@ showSolution prec ma@(SM (n, _)) vb vx = intercalate "\n" $ header ++ res
                                   ++ center cellWidth "x" ++ " = " ++ center cellWidth "b"
                                 s = replicate l '-' ++ "+" ++ replicate (length r - l - 1) '-'
                             in [h, s]
+
+---------------------------------------------------------------------------------------------
+-- Specialize for Float and Double instances
+{-# SPECIALISE INLINE lookupSV :: Int        -> SV Float  -> Float                        #-}
+{-# SPECIALISE INLINE lookupSV :: Int        -> SV Double -> Double                       #-}
+{-# SPECIALISE INLINE lookupSM :: (Int, Int) -> SM Float  -> Float                        #-}
+{-# SPECIALISE INLINE lookupSM :: (Int, Int) -> SM Double -> Double                       #-}
+{-# SPECIALISE INLINE sMulSV   :: Float     -> SV Float  -> SV Float                      #-}
+{-# SPECIALISE INLINE sMulSV   :: Double    -> SV Double -> SV Double                     #-}
+{-# SPECIALISE INLINE sMulSM   :: Float     -> SM Float  -> SM Float                      #-}
+{-# SPECIALISE INLINE sMulSM   :: Double    -> SM Double -> SM Double                     #-}
+{-# SPECIALISE INLINE addSV    :: SV Float  -> SV Float  -> SV Float                      #-}
+{-# SPECIALISE INLINE addSV    :: SV Double -> SV Double -> SV Double                     #-}
+{-# SPECIALISE INLINE subSV    :: SV Float  -> SV Float  -> SV Float                      #-}
+{-# SPECIALISE INLINE subSV    :: SV Double -> SV Double -> SV Double                     #-}
+{-# SPECIALISE INLINE dotSV    :: SV Float  -> SV Float  -> Float                         #-}
+{-# SPECIALISE INLINE dotSV    :: SV Double -> SV Double -> Double                        #-}
+{-# SPECIALISE INLINE mulSMV   :: SM Float  -> SV Float  -> SV Float                      #-}
+{-# SPECIALISE INLINE mulSMV   :: SM Double -> SV Double -> SV Double                     #-}
+{-# SPECIALISE INLINE normSV   :: SV Float  -> Float                                      #-}
+{-# SPECIALISE INLINE normSV   :: SV Double -> Double                                     #-}
+{-# SPECIALISE        solveCG  :: RandomGen g => g -> SM Float  -> SV Float  -> SV Float  #-}
+{-# SPECIALISE        solveCG  :: RandomGen g => g -> SM Double -> SV Double -> SV Double #-}
+{-# SPECIALISE INLINE cg       :: SM Float  -> SV Float  -> SV Float  -> SV Float         #-}
+{-# SPECIALISE INLINE cg       :: SM Double -> SV Double -> SV Double -> SV Double        #-}
