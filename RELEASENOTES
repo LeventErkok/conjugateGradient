@@ -1,9 +1,9 @@
 Hackage: <http://hackage.haskell.org/package/conjugateGradient>
 GitHub:  <http://github.com/LeventErkok/conjugateGradient>
 
-Latest Hackage released version: 2.1
+Latest Hackage released version: 2.2
 
-Version 2.2, Not yet released
+Version 2.2, 2013-04-20
 ======================================================================
   - Performance improvements:
       - Inline sparse vector operations
@@ -37,5 +37,4 @@ Versions 1.4-1.1, Early April 2013
 
 ======================================================================
 Version 1.0, 2013-04-14
-
   - First public release.
