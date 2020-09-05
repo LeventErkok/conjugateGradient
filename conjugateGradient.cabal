@@ -23,6 +23,8 @@ Maintainer:    Levent Erkok (erkokl@gmail.com)
 Build-Type:    Simple
 Extra-Source-Files: INSTALL, README, COPYRIGHT, RELEASENOTES
 
+Tested-With       : GHC==8.10.2
+
 source-repository head
     type:       git
     location:   git://github.com/LeventErkok/conjugateGradient.git

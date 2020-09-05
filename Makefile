@@ -42,5 +42,8 @@ hlint:
 	@echo "Running HLint.."
 	@hlint Math -i "Use otherwise" -i "Parse error"
 
+ci:
+	haskell-ci conjugateGradient.cabal --no-tests --no-benchmarks --no-doctest --no-hlint --email-notifications --no-haddock
+
 tags:
 	$(call mkTags)
