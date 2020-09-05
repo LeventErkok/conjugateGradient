@@ -1,3 +1,5 @@
+Cabal-Version: 2.2
+
 Name:          conjugateGradient
 Version:       2.2
 Category:      Math
@@ -10,8 +12,8 @@ Description:   Sparse matrix linear-equation solver, using the conjugate gradien
                methods (such as LU decomposition) are way too expensive to be useful in practice.
                Such large sparse matrices arise naturally in many engineering problems, such as
                in ASIC placement algorithms and when solving partial differential equations.
-Copyright:     Levent Erkok, 2013
-License:       BSD3
+Copyright:     Levent Erkok, 2013-2020
+License:       BSD-3-Clause
 License-file:  LICENSE
 Stability:     Experimental
 Author:        Levent Erkok
@@ -19,7 +21,6 @@ Homepage:      http://github.com/LeventErkok/conjugateGradient
 Bug-reports:   http://github.com/LeventErkok/conjugateGradient/issues
 Maintainer:    Levent Erkok (erkokl@gmail.com)
 Build-Type:    Simple
-Cabal-Version: >= 1.14
 Extra-Source-Files: INSTALL, README, COPYRIGHT, RELEASENOTES
 
 source-repository head
@@ -29,5 +30,5 @@ source-repository head
 Library
   default-language: Haskell2010
   ghc-options     : -Wall
-  Build-Depends   : base >= 4 && < 5, random, containers >= 0.5
+  Build-Depends   : base >= 4.11 && < 5, random, containers
   Exposed-modules : Math.ConjugateGradient

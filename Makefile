@@ -3,7 +3,6 @@
 # The conjugateGradient library is distributed with the BSD3 license. See the LICENSE file
 # in the distribution for details.
 SHELL     := /usr/bin/env bash
-TSTSRCS   = $(shell find . -name '*.hs' -or -name '*.lhs')
 DEPSRCS   = $(shell find . -name '*.hs' -or -name '*.lhs' -or -name '*.cabal' | grep -v Paths_conjugateGradient.hs)
 CABAL     = cabal
 TIME      = /usr/bin/time
@@ -17,16 +16,13 @@ endef
 all: install
 
 install: $(DEPSRCS) Makefile
-	@-ghc-pkg unregister conjugateGradient
 	$(call mkTags)
-	@$(CABAL) configure --disable-library-profiling
-	@(set -o pipefail; $(CABAL) build --ghc-options=-Werror 2>&1)
-	@$(CABAL) copy
-	@$(CABAL) register
+	@$(CABAL) new-install --lib
 
 test: install
 	@echo "*** Starting inline tests.."
-	@(set -o pipefail; $(TIME) doctest ${TSTSRCS} 2>&1)
+	@$(TIME) doctest Math/ConjugateGradient.hs --fast --no-magic -package random
+
 sdist: install
 	@(set -o pipefail; $(CABAL) sdist)
 
@@ -37,14 +33,14 @@ clean:
 	@rm -rf dist
 
 docs:
-	@(set -o pipefail; $(CABAL) haddock --haddock-option=--no-warnings --hyperlink-source 2>&1)
+	cabal new-haddock --haddock-option=--hyperlinked-source --haddock-option=--no-warnings	
 
 release: clean install sdist hlint test docs
 	@echo "*** conjugateGradient is ready for release!"
 
-hlint: install
+hlint:
 	@echo "Running HLint.."
-	@hlint Math -q -rhlintReport.html -i "Use otherwise" -i "Parse error"
+	@hlint Math -i "Use otherwise" -i "Parse error"
 
 tags:
 	$(call mkTags)
